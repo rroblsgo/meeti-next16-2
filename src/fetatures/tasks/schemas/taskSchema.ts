@@ -28,13 +28,19 @@ export const TaskSchema = z.object({
   category: z.enum(TASK_CATEGORIES, {
     error: 'Selecciona una categoría válida',
   }),
-  attachments: z.array(z.url()).default([]),
+  attachments: z.array(z.string()).default([]),
   assigneeId: z.string().trim().min(1, { error: 'Selecciona un responsable' }),
 });
 
 export const UpdateTaskStatusSchema = z.object({
-  status: z.enum(['COMPLETADA', 'BLOQUEADA', 'CANCELADA', 'EN_CURSO', 'PENDIENTE']),
+  status: z.enum([
+    'COMPLETADA',
+    'BLOQUEADA',
+    'CANCELADA',
+    'EN_CURSO',
+    'PENDIENTE',
+  ]),
 });
 
-export type TaskInput = z.infer<typeof TaskSchema>;
+export type TaskInput = z.input<typeof TaskSchema>;
 export type UpdateTaskStatusInput = z.infer<typeof UpdateTaskStatusSchema>;
