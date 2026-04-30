@@ -14,14 +14,23 @@ import TaskItem from './TaskItem';
 
 const PAGE_SIZE = 10;
 
-type Props = { tasks: TaskListItem[] };
+type NplOption = { id: number; tituloOperacion: string };
 
-export default function TaskList({ tasks }: Props) {
+type Props = {
+  tasks: TaskListItem[];
+  nplOptions?: NplOption[];
+  /** Si se pasa, el filtro NPL queda bloqueado a ese nplId */
+  fixedNplId?: number;
+};
+
+export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) {
   // ── Filtros ────────────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterPriority, setFilterPriority] = useState('ALL');
-  const [filterNpl, setFilterNpl] = useState('ALL');
+  const [filterNpl, setFilterNpl] = useState(
+    fixedNplId ? String(fixedNplId) : 'ALL'
+  );
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
@@ -39,10 +48,11 @@ export default function TaskList({ tasks }: Props) {
 
       const matchStatus = filterStatus === 'ALL' || t.status === filterStatus;
       const matchPriority = filterPriority === 'ALL' || t.priority === filterPriority;
-      const matchNpl =
-        filterNpl === 'ALL' ||
-        (filterNpl === 'WITH_NPL' && t.nplId !== null) ||
-        (filterNpl === 'WITHOUT_NPL' && t.nplId === null);
+
+      let matchNpl = true;
+      if (filterNpl === 'WITH_NPL') matchNpl = t.nplId !== null;
+      else if (filterNpl === 'WITHOUT_NPL') matchNpl = t.nplId === null;
+      else if (filterNpl !== 'ALL') matchNpl = t.nplId === Number(filterNpl);
 
       const fp = t.fechaPropuesta ? new Date(t.fechaPropuesta) : null;
       const matchDateFrom = !from || (fp !== null && fp >= from);
@@ -117,15 +127,27 @@ export default function TaskList({ tasks }: Props) {
             ))}
           </select>
 
-          <select
-            value={filterNpl}
-            onChange={handleFilterChange(setFilterNpl)}
-            className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
-          >
-            <option value="ALL">Con o sin NPL</option>
-            <option value="WITH_NPL">Con NPL vinculado</option>
-            <option value="WITHOUT_NPL">Sin NPL</option>
-          </select>
+          {/* Filtro NPL: si está fijo no se muestra el select */}
+          {!fixedNplId && (
+            <select
+              value={filterNpl}
+              onChange={handleFilterChange(setFilterNpl)}
+              className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
+            >
+              <option value="ALL">Con o sin NPL</option>
+              <option value="WITH_NPL">Con NPL vinculado</option>
+              <option value="WITHOUT_NPL">Sin NPL</option>
+              {nplOptions.length > 0 && (
+                <optgroup label="── NPL específico ──">
+                  {nplOptions.map((n) => (
+                    <option key={n.id} value={String(n.id)}>
+                      {n.tituloOperacion}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          )}
 
           {/* Rango de fecha propuesta */}
           <div className="flex items-center gap-1.5 text-sm text-gray-500">

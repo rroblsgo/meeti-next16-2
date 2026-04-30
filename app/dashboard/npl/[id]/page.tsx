@@ -18,6 +18,8 @@ import { generatePageTitle } from '@/src/shared/utils/metadata';
 import DownloadPdfButton from '@/src/fetatures/gestion_npl/components/DownloadPdfButton';
 import { documentService } from '@/src/fetatures/documents/services/DocumentService';
 import DocumentsList from '@/src/fetatures/documents/components/DocumentsList';
+import { taskService } from '@/src/fetatures/tasks/services/TaskService';
+import NplTasksSection from '@/src/fetatures/tasks/components/NplTasksSection';
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -94,11 +96,12 @@ export default async function NplDetailDashboardPage({ params }: Props) {
   // Solo el creador puede ver el detalle completo en el dashboard
   if (!NplPolicy.canView(session.user, npl)) redirect('/dashboard/npl');
 
-  // Cargar deudores, rentabilidad y documentos en paralelo
-  const [deudores, rentabilidad, documents] = await Promise.all([
+  // Cargar deudores, rentabilidad, documentos y tareas en paralelo
+  const [deudores, rentabilidad, documents, nplTasks] = await Promise.all([
     deudorService.listByNpl(npl.id),
     Promise.resolve(calcularRentabilidad(npl)),
     documentService.listByEntity('NPL', npl.id),
+    taskService.listTasksByNpl(npl.id),
   ]);
 
   const { roiNeto, inversionTotal, beneficioNeto } = rentabilidad;
@@ -467,6 +470,9 @@ export default async function NplDetailDashboardPage({ params }: Props) {
           </ul>
         )}
       </Section>
+
+      {/* ── E. Tareas / Actuaciones ──────────────────────────────────────── */}
+      <NplTasksSection nplId={npl.id} tasks={nplTasks} />
 
       {/* ── Adjuntos ─────────────────────────────────────────────────────── */}
       <Section title="Documentos adjuntos">

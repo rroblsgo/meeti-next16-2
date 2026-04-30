@@ -1,6 +1,6 @@
 import { db } from '@/src/db';
 import { clientes, users } from '@/src/db/schema';
-import { desc, eq, ilike, or } from 'drizzle-orm';
+import { desc, asc, eq, ilike, or } from 'drizzle-orm';
 import {
   ClienteEstado,
   ClienteListItem,
@@ -12,41 +12,47 @@ export interface IClienteRepository {
   create(data: InsertCliente): Promise<SelectCliente>;
   findById(id: number): Promise<SelectCliente | undefined>;
   listByUser(userId: string): Promise<ClienteListItem[]>;
-  update(id: number, data: Partial<InsertCliente>): Promise<SelectCliente | undefined>;
-  updateEstado(id: number, estado: ClienteEstado): Promise<SelectCliente | undefined>;
+  update(
+    id: number,
+    data: Partial<InsertCliente>
+  ): Promise<SelectCliente | undefined>;
+  updateEstado(
+    id: number,
+    estado: ClienteEstado
+  ): Promise<SelectCliente | undefined>;
   remove(id: number): Promise<void>;
 }
 
 // Campos comunes para los selects de listado
 const clienteSelectFields = {
-  id:                      clientes.id,
-  nombre:                  clientes.nombre,
-  dni:                     clientes.dni,
-  empresa:                 clientes.empresa,
-  nif:                     clientes.nif,
-  imagen:                  clientes.imagen,
-  direccion:               clientes.direccion,
-  provincia:               clientes.provincia,
-  municipio:               clientes.municipio,
-  codigoPostal:            clientes.codigoPostal,
-  emails:                  clientes.emails,
-  telefonos:               clientes.telefonos,
-  contactos:               clientes.contactos,
-  perfilInversor:          clientes.perfilInversor,
-  ocupacionPrincipal:      clientes.ocupacionPrincipal,
-  rangoCapitalInvertir:    clientes.rangoCapitalInvertir,
-  activosInteresado:       clientes.activosInteresado,
-  experienciaPreviaDetalle:clientes.experienciaPreviaDetalle,
-  informadoNplDetalle:     clientes.informadoNplDetalle,
-  estado:                  clientes.estado,
-  fuenteCaptacion:         clientes.fuenteCaptacion,
-  notas:                   clientes.notas,
-  consentimientoRgpd:      clientes.consentimientoRgpd,
-  fechaConsentimiento:     clientes.fechaConsentimiento,
-  createdAt:               clientes.createdAt,
-  updatedAt:               clientes.updatedAt,
-  creatorId:               clientes.creatorId,
-  creatorName:             users.name,
+  id: clientes.id,
+  nombre: clientes.nombre,
+  dni: clientes.dni,
+  empresa: clientes.empresa,
+  nif: clientes.nif,
+  imagen: clientes.imagen,
+  direccion: clientes.direccion,
+  provincia: clientes.provincia,
+  municipio: clientes.municipio,
+  codigoPostal: clientes.codigoPostal,
+  emails: clientes.emails,
+  telefonos: clientes.telefonos,
+  contactos: clientes.contactos,
+  perfilInversor: clientes.perfilInversor,
+  ocupacionPrincipal: clientes.ocupacionPrincipal,
+  rangoCapitalInvertir: clientes.rangoCapitalInvertir,
+  activosInteresado: clientes.activosInteresado,
+  experienciaPreviaDetalle: clientes.experienciaPreviaDetalle,
+  informadoNplDetalle: clientes.informadoNplDetalle,
+  estado: clientes.estado,
+  fuenteCaptacion: clientes.fuenteCaptacion,
+  notas: clientes.notas,
+  consentimientoRgpd: clientes.consentimientoRgpd,
+  fechaConsentimiento: clientes.fechaConsentimiento,
+  createdAt: clientes.createdAt,
+  updatedAt: clientes.updatedAt,
+  creatorId: clientes.creatorId,
+  creatorName: users.name,
 };
 
 class ClienteRepository implements IClienteRepository {
@@ -70,7 +76,7 @@ class ClienteRepository implements IClienteRepository {
       .from(clientes)
       .innerJoin(users, eq(clientes.creatorId, users.id))
       .where(eq(clientes.creatorId, userId))
-      .orderBy(desc(clientes.createdAt));
+      .orderBy(asc(clientes.nombre));
   }
 
   async update(id: number, data: Partial<InsertCliente>) {

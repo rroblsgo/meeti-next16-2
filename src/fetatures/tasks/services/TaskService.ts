@@ -51,6 +51,10 @@ class TaskService {
     return this.taskRepository.listAll();
   }
 
+  async listTasksByNpl(nplId: number) {
+    return this.taskRepository.listByNpl(nplId);
+  }
+
   async updateTask(taskId: number, data: TaskInput, user: User) {
     const currentTask = await this.getTask(taskId);
     if (!TaskPolicy.canEdit(user, currentTask)) {

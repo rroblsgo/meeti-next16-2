@@ -17,7 +17,10 @@ export default async function TasksPage() {
   const { session } = await requireAuth();
   if (!session) redirect('/auth/login');
 
-  const tasks = await taskService.listUserTasks(session.user);
+  const [tasks, nplOptions] = await Promise.all([
+    taskService.listUserTasks(session.user),
+    taskService.getTaskFormOptions().then((o) => o.npls),
+  ]);
 
   return (
     <>
@@ -30,7 +33,7 @@ export default async function TasksPage() {
           + Nueva tarea
         </Link>
       </div>
-      <TaskList tasks={tasks} />
+      <TaskList tasks={tasks} nplOptions={nplOptions} />
     </>
   );
 }

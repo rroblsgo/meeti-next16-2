@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { requireAuth } from '@/src/lib/auth-server';
+import { nplService } from '@/src/fetatures/gestion_npl/services/NplService';
 import Heading from '@/src/shared/components/typography/Heading';
 import { generatePageTitle } from '@/src/shared/utils/metadata';
-import MyNpls from '@/src/fetatures/gestion_npl/components/MyNpls';
+import NplList from '@/src/fetatures/gestion_npl/components/NplList';
 
 const title = 'Gestión de NPLs';
 
@@ -10,19 +13,24 @@ export const metadata: Metadata = {
   title: generatePageTitle(title),
 };
 
-export default function NplDashboardPage() {
+export default async function NplDashboardPage() {
+  const { session } = await requireAuth();
+  if (!session) redirect('/auth/login');
+
+  const npls = await nplService.listUserNpls(session.user.id);
+
   return (
     <>
       <Heading className="text-center text-amber-500">{title}</Heading>
-      <div className="flex justify-between flex-col lg:flex-row">
+      <div className="mt-5 flex justify-end">
         <Link
           href="/dashboard/npl/create"
-          className="mt-5 block rounded-lg bg-orange-500 px-10 py-3 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 lg:inline-block lg:text-xl"
+          className="rounded-lg bg-orange-500 px-8 py-3 text-xs font-bold text-white hover:bg-orange-600 lg:text-sm"
         >
-          Crear un NPL
+          + Crear NPL
         </Link>
       </div>
-      <MyNpls />
+      <NplList npls={npls} />
     </>
   );
 }

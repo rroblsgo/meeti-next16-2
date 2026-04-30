@@ -14,14 +14,14 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const navigation = [
-  { name: 'Panel de Administración', href: '/dashboard',              icon: HomeIcon                  },
-  { name: 'Comunidades',             href: '/dashboard/communities',  icon: UsersIcon                 },
-  { name: 'Tareas',                  href: '/dashboard/tasks',        icon: ClipboardDocumentListIcon },
-  { name: 'Gestión NPL',             href: '/dashboard/npl',          icon: BuildingOffice2Icon       },
-  { name: 'Clientes',                href: '/dashboard/clientes',     icon: UserGroupIcon             },
-  { name: 'Documentos',              href: '/dashboard/documents',    icon: DocumentTextIcon          },
-  { name: 'Meetis',                  href: '/dashboard/meetis',       icon: FolderIcon                },
-  { name: 'Notificaciones',          href: '/dashboard/notifications',icon: BellIcon                  },
+  { name: 'Panel de Administración', href: '/dashboard', icon: HomeIcon },
+  { name: 'Comunidades', href: '/dashboard/communities', icon: UsersIcon },
+  { name: 'Meetis', href: '/dashboard/meetis', icon: FolderIcon },
+  { name: 'Notificaciones', href: '/dashboard/notifications', icon: BellIcon },
+  { name: 'Gestión NPL', href: '/dashboard/npl', icon: BuildingOffice2Icon },
+  { name: 'Clientes', href: '/dashboard/clientes', icon: UserGroupIcon },
+  { name: 'Tareas', href: '/dashboard/tasks', icon: ClipboardDocumentListIcon },
+  { name: 'Documentos', href: '/dashboard/documents', icon: DocumentTextIcon },
 ];
 
 export default function DashboardNavigation() {
