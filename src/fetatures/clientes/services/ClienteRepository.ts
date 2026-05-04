@@ -11,6 +11,7 @@ import {
 export interface IClienteRepository {
   create(data: InsertCliente): Promise<SelectCliente>;
   findById(id: number): Promise<SelectCliente | undefined>;
+  listAll(): Promise<ClienteListItem[]>;
   listByUser(userId: string): Promise<ClienteListItem[]>;
   update(
     id: number,
@@ -70,6 +71,16 @@ class ClienteRepository implements IClienteRepository {
     return result;
   }
 
+  // OFFICE MODE: devuelve todos los clientes de la oficina
+  async listAll(): Promise<ClienteListItem[]> {
+    return db
+      .select(clienteSelectFields)
+      .from(clientes)
+      .innerJoin(users, eq(clientes.creatorId, users.id))
+      .orderBy(asc(clientes.nombre));
+  }
+
+  // Mantenido por compatibilidad; útil cuando se implementen filtros por usuario
   async listByUser(userId: string): Promise<ClienteListItem[]> {
     return db
       .select(clienteSelectFields)

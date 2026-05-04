@@ -1,26 +1,27 @@
 import { User } from 'better-auth';
 import { SelectNpl } from '../types/npl.types';
 
+// OFFICE MODE: todos los usuarios autenticados tienen acceso completo.
+// TODO (roles): cuando se implementen roles (admin, legal, comercial…),
+// sustituir los `return true` por comprobaciones sobre `user.role`.
 export class NplPolicy {
-  static canView(user: User, npl: SelectNpl): boolean {
-    // NPLs públicos los puede ver cualquier usuario autenticado
-    if (npl.esPublico) return true;
-    return npl.creatorId === user.id;
+  static canView(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 
-  static canEdit(user: User, npl: SelectNpl): boolean {
-    return npl.creatorId === user.id;
+  static canEdit(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 
-  static canDelete(user: User, npl: SelectNpl): boolean {
-    return npl.creatorId === user.id;
+  static canDelete(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 
-  static canChangeEstado(user: User, npl: SelectNpl): boolean {
-    return npl.creatorId === user.id;
+  static canChangeEstado(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 
-  static canTogglePublico(user: User, npl: SelectNpl): boolean {
-    return npl.creatorId === user.id;
+  static canTogglePublico(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 }

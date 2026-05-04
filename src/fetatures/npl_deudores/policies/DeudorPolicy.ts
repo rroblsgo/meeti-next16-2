@@ -1,19 +1,19 @@
 import { User } from 'better-auth';
 import { SelectNpl } from '@/src/fetatures/gestion_npl/types/npl.types';
 
-// La política de deudores se basa en el NPL al que pertenecen:
-// solo el creador del NPL puede gestionar sus deudores.
-
+// OFFICE MODE: todos los usuarios autenticados tienen acceso completo.
+// TODO (roles): cuando se implementen roles (admin, legal, comercial…),
+// sustituir los `return true` por comprobaciones sobre `user.role`.
 export class DeudorPolicy {
-  static canCreate(user: User, npl: SelectNpl): boolean {
-    return npl.creatorId === user.id;
+  static canCreate(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 
-  static canEdit(user: User, npl: SelectNpl): boolean {
-    return npl.creatorId === user.id;
+  static canEdit(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 
-  static canDelete(user: User, npl: SelectNpl): boolean {
-    return npl.creatorId === user.id;
+  static canDelete(_user: User, _npl: SelectNpl): boolean {
+    return true;
   }
 }

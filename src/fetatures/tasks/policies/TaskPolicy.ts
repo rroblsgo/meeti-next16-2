@@ -1,20 +1,23 @@
 import { User } from 'better-auth';
 import { SelectTask } from '../types/task.types';
 
+// OFFICE MODE: todos los usuarios autenticados tienen acceso completo.
+// TODO (roles): cuando se implementen roles (admin, legal, comercial…),
+// sustituir los `return true` por comprobaciones sobre `user.role`.
 export class TaskPolicy {
-  static canView(user: User, task: SelectTask) {
-    return task.creatorId === user.id || task.assigneeId === user.id;
+  static canView(_user: User, _task: SelectTask) {
+    return true;
   }
 
-  static canEdit(user: User, task: SelectTask) {
-    return task.creatorId === user.id || task.assigneeId === user.id;
+  static canEdit(_user: User, _task: SelectTask) {
+    return true;
   }
 
-  static canDelete(user: User, task: SelectTask) {
-    return task.creatorId === user.id;
+  static canDelete(_user: User, _task: SelectTask) {
+    return true;
   }
 
-  static canChangeStatus(user: User, task: SelectTask) {
-    return task.creatorId === user.id || task.assigneeId === user.id;
+  static canChangeStatus(_user: User, _task: SelectTask) {
+    return true;
   }
 }

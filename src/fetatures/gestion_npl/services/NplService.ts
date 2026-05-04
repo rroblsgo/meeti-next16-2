@@ -47,8 +47,9 @@ class NplService {
     return current;
   }
 
-  async listUserNpls(userId: string): Promise<NplListItem[]> {
-    return this.nplRepository.listByUser(userId);
+  async listUserNpls(_userId: string): Promise<NplListItem[]> {
+    // OFFICE MODE: se devuelven todos los NPLs de la oficina
+    return this.nplRepository.listAll();
   }
 
   async listPublicNpls(): Promise<NplListItem[]> {

@@ -11,6 +11,7 @@ import {
 export interface INplRepository {
   create(data: InsertNpl): Promise<SelectNpl>;
   findById(nplId: number): Promise<SelectNpl | undefined>;
+  listAll(): Promise<NplListItem[]>;
   listByUser(userId: string): Promise<NplListItem[]>;
   listPublicos(): Promise<NplListItem[]>;
   update(
@@ -88,6 +89,16 @@ class NplRepository implements INplRepository {
     return result;
   }
 
+  // OFFICE MODE: devuelve todos los NPLs de la oficina
+  async listAll(): Promise<NplListItem[]> {
+    return db
+      .select(nplSelectFields)
+      .from(npl)
+      .innerJoin(users, eq(npl.creatorId, users.id))
+      .orderBy(desc(npl.createdAt));
+  }
+
+  // Mantenido por compatibilidad; útil cuando se implementen filtros por usuario
   async listByUser(userId: string): Promise<NplListItem[]> {
     return db
       .select(nplSelectFields)

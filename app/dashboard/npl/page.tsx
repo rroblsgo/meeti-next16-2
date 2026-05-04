@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/src/lib/auth-server';
@@ -30,7 +31,9 @@ export default async function NplDashboardPage() {
           + Crear NPL
         </Link>
       </div>
-      <NplList npls={npls} />
+      <Suspense>
+        <NplList npls={npls} />
+      </Suspense>
     </>
   );
 }

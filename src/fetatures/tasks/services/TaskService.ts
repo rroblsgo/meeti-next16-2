@@ -43,8 +43,9 @@ class TaskService {
     return currentTask;
   }
 
-  async listUserTasks(user: User) {
-    return this.taskRepository.listByUser(user.id);
+  async listUserTasks(_user: User) {
+    // OFFICE MODE: se devuelven todas las tareas de la oficina
+    return this.taskRepository.listAll();
   }
 
   async listAllTasks() {

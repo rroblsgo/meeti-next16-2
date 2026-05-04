@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/src/lib/auth-server';
@@ -26,7 +27,9 @@ export default async function ClientesDashboardPage() {
           + Nuevo cliente
         </Link>
       </div>
-      <ClienteList clientes={clientesList} />
+      <Suspense>
+        <ClienteList clientes={clientesList} />
+      </Suspense>
     </>
   );
 }

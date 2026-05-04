@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'jdzc3jyqjv.ufs.sh',
       },
+      // Wildcard para cubrir cualquier app futura de UploadThing
+      {
+        protocol: 'https',
+        hostname: '*.ufs.sh',
+      },
     ],
   },
 };

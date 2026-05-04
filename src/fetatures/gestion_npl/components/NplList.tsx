@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import type { Route } from 'next';
 import { Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { NplListItem } from '../types/npl.types';
 import NplItem from './NplItem';
@@ -9,7 +11,6 @@ import DeleteNplDialog from './DeleteNplDialog';
 
 const PAGE_SIZE = 10;
 
-// Provincias únicas extraídas de los propios datos (sin duplicados, ordenadas)
 function getProvincias(npls: NplListItem[]) {
   const set = new Set(npls.map((n) => n.provincia).filter(Boolean) as string[]);
   return [...set].sort((a, b) => a.localeCompare(b, 'es'));
@@ -28,26 +29,54 @@ function getMunicipios(npls: NplListItem[], provincia: string) {
 type Props = { npls: NplListItem[] };
 
 export default function NplList({ npls }: Props) {
-  const [search, setSearch] = useState('');
-  const [filterProvincia, setFilterProvincia] = useState('');
-  const [filterMunicipio, setFilterMunicipio] = useState('');
-  const [costeMin, setCosteMin] = useState('');
-  const [costeMax, setCosteMax] = useState('');
-  const [page, setPage] = useState(1);
+  const router      = useRouter();
+  const pathname    = usePathname();
+  const searchParams = useSearchParams();
 
+  // ── Leer filtros desde la URL ───────────────────────────────────────────
+  const search          = searchParams.get('q')         ?? '';
+  const filterProvincia = searchParams.get('provincia') ?? '';
+  const filterMunicipio = searchParams.get('municipio') ?? '';
+  const costeMin        = searchParams.get('min')       ?? '';
+  const costeMax        = searchParams.get('max')       ?? '';
+  const page            = Number(searchParams.get('page') ?? '1');
+
+  // ── Escribir filtros en la URL ──────────────────────────────────────────
+  const updateParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === '') params.delete(key);
+        else params.set(key, value);
+      });
+      if (!('page' in updates)) params.delete('page');
+      router.replace(`${pathname}?${params.toString()}` as Route, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  const handleChange =
+    (key: string) =>
+    (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
+      updateParams({ [key]: e.target.value });
+
+  const handleProvinciaChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
+    updateParams({ provincia: e.target.value, municipio: '' });
+
+  // ── Filtrado + ordenado ─────────────────────────────────────────────────
   const provincias = useMemo(() => getProvincias(npls), [npls]);
   const municipios = useMemo(() => getMunicipios(npls, filterProvincia), [npls, filterProvincia]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
+    const q   = search.toLowerCase();
     const min = costeMin ? parseFloat(costeMin) : null;
     const max = costeMax ? parseFloat(costeMax) : null;
 
     return npls
       .filter((n) => {
-        const matchSearch = !q || n.tituloOperacion.toLowerCase().includes(q);
-        const matchProvincia = !filterProvincia || n.provincia === filterProvincia;
-        const matchMunicipio = !filterMunicipio || n.municipio === filterMunicipio;
+        const matchSearch    = !q               || n.tituloOperacion.toLowerCase().includes(q);
+        const matchProvincia = !filterProvincia  || n.provincia === filterProvincia;
+        const matchMunicipio = !filterMunicipio  || n.municipio === filterMunicipio;
         const coste = n.costeAdquisicionCredito ? parseFloat(n.costeAdquisicionCredito) : null;
         const matchMin = min === null || (coste !== null && coste >= min);
         const matchMax = max === null || (coste !== null && coste <= max);
@@ -57,19 +86,10 @@ export default function NplList({ npls }: Props) {
   }, [npls, search, filterProvincia, filterMunicipio, costeMin, costeMax]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const safePage   = Math.min(Math.max(1, page), totalPages);
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const reset = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setter(e.target.value);
-    setPage(1);
-  };
-
-  const handleProvinciaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilterProvincia(e.target.value);
-    setFilterMunicipio('');
-    setPage(1);
-  };
+  const goToPage = (p: number) => updateParams({ page: String(p) });
 
   if (npls.length === 0) {
     return (
@@ -89,23 +109,20 @@ export default function NplList({ npls }: Props) {
       {/* ── Filtros ──────────────────────────────────────────────────────── */}
       <div className="rounded-xl bg-white px-4 py-3 shadow-sm space-y-3">
 
-        {/* Búsqueda por título */}
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={search}
-            onChange={reset(setSearch)}
+            onChange={handleChange('q')}
             placeholder="Buscar por título de operación…"
             className="w-full rounded-md border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400"
           />
         </div>
 
-        {/* Selects y rangos */}
         <div className="flex flex-wrap items-center gap-3">
           <Filter className="h-4 w-4 shrink-0 text-gray-400" />
 
-          {/* Provincia */}
           <select
             value={filterProvincia}
             onChange={handleProvinciaChange}
@@ -117,10 +134,9 @@ export default function NplList({ npls }: Props) {
             ))}
           </select>
 
-          {/* Municipio */}
           <select
             value={filterMunicipio}
-            onChange={reset(setFilterMunicipio)}
+            onChange={handleChange('municipio')}
             disabled={!filterProvincia}
             className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none disabled:opacity-40"
           >
@@ -130,13 +146,12 @@ export default function NplList({ npls }: Props) {
             ))}
           </select>
 
-          {/* Rango coste adquisición */}
           <div className="flex items-center gap-1.5">
             <span className="shrink-0 text-xs font-medium text-gray-400">Coste adq.:</span>
             <input
               type="number"
               value={costeMin}
-              onChange={reset(setCosteMin)}
+              onChange={handleChange('min')}
               placeholder="Mín €"
               min={0}
               className="w-24 rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
@@ -145,7 +160,7 @@ export default function NplList({ npls }: Props) {
             <input
               type="number"
               value={costeMax}
-              onChange={reset(setCosteMax)}
+              onChange={handleChange('max')}
               placeholder="Máx €"
               min={0}
               className="w-24 rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
@@ -181,7 +196,7 @@ export default function NplList({ npls }: Props) {
           </p>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => goToPage(safePage - 1)}
               disabled={safePage === 1}
               className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >
@@ -200,7 +215,7 @@ export default function NplList({ npls }: Props) {
                 ) : (
                   <button
                     key={p}
-                    onClick={() => setPage(p as number)}
+                    onClick={() => goToPage(p as number)}
                     className={`min-w-[2rem] rounded-md px-2 py-1 text-sm font-medium ${
                       p === safePage ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'
                     }`}
@@ -210,7 +225,7 @@ export default function NplList({ npls }: Props) {
                 )
               )}
             <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => goToPage(safePage + 1)}
               disabled={safePage === totalPages}
               className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >

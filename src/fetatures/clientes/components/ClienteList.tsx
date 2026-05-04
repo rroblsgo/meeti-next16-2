@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import type { Route } from 'next';
 import { Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   ClienteListItem,
@@ -33,13 +35,41 @@ function getMunicipios(clientes: ClienteListItem[], provincia: string) {
 type Props = { clientes: ClienteListItem[] };
 
 export default function ClienteList({ clientes }: Props) {
-  const [search, setSearch] = useState('');
-  const [filterProvincia, setFilterProvincia] = useState('');
-  const [filterMunicipio, setFilterMunicipio] = useState('');
-  const [filterPerfil, setFilterPerfil] = useState('');
-  const [filterRango, setFilterRango] = useState('');
-  const [page, setPage] = useState(1);
+  const router      = useRouter();
+  const pathname    = usePathname();
+  const searchParams = useSearchParams();
 
+  // ── Leer filtros desde la URL ───────────────────────────────────────────
+  const search          = searchParams.get('q')         ?? '';
+  const filterProvincia = searchParams.get('provincia') ?? '';
+  const filterMunicipio = searchParams.get('municipio') ?? '';
+  const filterPerfil    = searchParams.get('perfil')    ?? '';
+  const filterRango     = searchParams.get('rango')     ?? '';
+  const page            = Number(searchParams.get('page') ?? '1');
+
+  // ── Escribir filtros en la URL ──────────────────────────────────────────
+  const updateParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === '') params.delete(key);
+        else params.set(key, value);
+      });
+      if (!('page' in updates)) params.delete('page');
+      router.replace(`${pathname}?${params.toString()}` as Route, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  const handleChange =
+    (key: string) =>
+    (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
+      updateParams({ [key]: e.target.value });
+
+  const handleProvinciaChange = (e: React.ChangeEvent<HTMLSelectElement>) =>
+    updateParams({ provincia: e.target.value, municipio: '' });
+
+  // ── Filtrado + ordenado ─────────────────────────────────────────────────
   const provincias = useMemo(() => getProvincias(clientes), [clientes]);
   const municipios = useMemo(() => getMunicipios(clientes, filterProvincia), [clientes, filterProvincia]);
 
@@ -47,30 +77,21 @@ export default function ClienteList({ clientes }: Props) {
     const q = search.toLowerCase();
     return clientes
       .filter((c) => {
-        const matchSearch = !q || c.nombre.toLowerCase().includes(q);
-        const matchProvincia = !filterProvincia || c.provincia === filterProvincia;
-        const matchMunicipio = !filterMunicipio || c.municipio === filterMunicipio;
-        const matchPerfil = !filterPerfil || c.perfilInversor === filterPerfil;
-        const matchRango = !filterRango || c.rangoCapitalInvertir === filterRango;
+        const matchSearch    = !q               || c.nombre.toLowerCase().includes(q);
+        const matchProvincia = !filterProvincia  || c.provincia === filterProvincia;
+        const matchMunicipio = !filterMunicipio  || c.municipio === filterMunicipio;
+        const matchPerfil    = !filterPerfil     || c.perfilInversor === filterPerfil;
+        const matchRango     = !filterRango      || c.rangoCapitalInvertir === filterRango;
         return matchSearch && matchProvincia && matchMunicipio && matchPerfil && matchRango;
       })
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
   }, [clientes, search, filterProvincia, filterMunicipio, filterPerfil, filterRango]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const safePage   = Math.min(Math.max(1, page), totalPages);
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const reset = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setter(e.target.value);
-    setPage(1);
-  };
-
-  const handleProvinciaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilterProvincia(e.target.value);
-    setFilterMunicipio('');
-    setPage(1);
-  };
+  const goToPage = (p: number) => updateParams({ page: String(p) });
 
   if (clientes.length === 0) {
     return (
@@ -90,23 +111,20 @@ export default function ClienteList({ clientes }: Props) {
       {/* ── Filtros ──────────────────────────────────────────────────────── */}
       <div className="rounded-xl bg-white px-4 py-3 shadow-sm space-y-3">
 
-        {/* Búsqueda por nombre */}
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={search}
-            onChange={reset(setSearch)}
+            onChange={handleChange('q')}
             placeholder="Buscar por nombre…"
             className="w-full rounded-md border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400"
           />
         </div>
 
-        {/* Selects */}
         <div className="flex flex-wrap items-center gap-3">
           <Filter className="h-4 w-4 shrink-0 text-gray-400" />
 
-          {/* Provincia */}
           <select
             value={filterProvincia}
             onChange={handleProvinciaChange}
@@ -118,10 +136,9 @@ export default function ClienteList({ clientes }: Props) {
             ))}
           </select>
 
-          {/* Municipio */}
           <select
             value={filterMunicipio}
-            onChange={reset(setFilterMunicipio)}
+            onChange={handleChange('municipio')}
             disabled={!filterProvincia}
             className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none disabled:opacity-40"
           >
@@ -131,10 +148,9 @@ export default function ClienteList({ clientes }: Props) {
             ))}
           </select>
 
-          {/* Perfil inversor */}
           <select
             value={filterPerfil}
-            onChange={reset(setFilterPerfil)}
+            onChange={handleChange('perfil')}
             className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
           >
             <option value="">Todos los perfiles</option>
@@ -143,10 +159,9 @@ export default function ClienteList({ clientes }: Props) {
             ))}
           </select>
 
-          {/* Rango de capital */}
           <select
             value={filterRango}
-            onChange={reset(setFilterRango)}
+            onChange={handleChange('rango')}
             className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
           >
             <option value="">Cualquier capital</option>
@@ -184,7 +199,7 @@ export default function ClienteList({ clientes }: Props) {
           </p>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => goToPage(safePage - 1)}
               disabled={safePage === 1}
               className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >
@@ -203,7 +218,7 @@ export default function ClienteList({ clientes }: Props) {
                 ) : (
                   <button
                     key={p}
-                    onClick={() => setPage(p as number)}
+                    onClick={() => goToPage(p as number)}
                     className={`min-w-[2rem] rounded-md px-2 py-1 text-sm font-medium ${
                       p === safePage ? 'bg-orange-500 text-white' : 'text-gray-600 hover:bg-gray-100'
                     }`}
@@ -213,7 +228,7 @@ export default function ClienteList({ clientes }: Props) {
                 )
               )}
             <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => goToPage(safePage + 1)}
               disabled={safePage === totalPages}
               className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >

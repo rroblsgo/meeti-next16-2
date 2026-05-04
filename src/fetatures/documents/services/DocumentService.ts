@@ -18,8 +18,9 @@ class DocumentService {
     });
   }
 
-  async listAll(userId: string): Promise<DocumentListItem[]> {
-    return documentRepository.listAll(userId);
+  async listAll(): Promise<DocumentListItem[]> {
+    // OFFICE MODE: se devuelven todos los documentos de la oficina
+    return documentRepository.listAllWithEntity();
   }
 
   async listByEntity(

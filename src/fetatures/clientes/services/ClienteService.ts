@@ -32,8 +32,9 @@ class ClienteService {
     return current;
   }
 
-  async listUserClientes(userId: string): Promise<ClienteListItem[]> {
-    return this.repo.listByUser(userId);
+  async listUserClientes(_userId: string): Promise<ClienteListItem[]> {
+    // OFFICE MODE: se devuelven todos los clientes de la oficina
+    return this.repo.listAll();
   }
 
   async updateCliente(id: number, data: ClienteInput, user: User): Promise<SelectCliente> {

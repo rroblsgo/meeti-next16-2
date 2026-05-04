@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import type { Route } from 'next';
 import { Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   TaskListItem,
@@ -19,26 +21,56 @@ type NplOption = { id: number; tituloOperacion: string };
 type Props = {
   tasks: TaskListItem[];
   nplOptions?: NplOption[];
-  /** Si se pasa, el filtro NPL queda bloqueado a ese nplId */
   fixedNplId?: number;
 };
 
 export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) {
-  // ── Filtros ────────────────────────────────────────────────────────────
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('ALL');
-  const [filterPriority, setFilterPriority] = useState('ALL');
-  const [filterNpl, setFilterNpl] = useState(
-    fixedNplId ? String(fixedNplId) : 'ALL'
-  );
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [page, setPage] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
+  // ── Leer filtros desde la URL ───────────────────────────────────────────
+  const search       = searchParams.get('q') ?? '';
+  const filterStatus = searchParams.get('status') ?? 'ALL';
+  const filterPriority = searchParams.get('priority') ?? 'ALL';
+  const filterNpl    = fixedNplId
+    ? String(fixedNplId)
+    : (searchParams.get('npl') ?? 'ALL');
+  const dateFrom     = searchParams.get('desde') ?? '';
+  const dateTo       = searchParams.get('hasta') ?? '';
+  const page         = Number(searchParams.get('page') ?? '1');
+
+  // ── Escribir filtros en la URL ──────────────────────────────────────────
+  const updateParams = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === '' || value === 'ALL') {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
+
+      // Cualquier cambio de filtro vuelve a la página 1
+      if (!('page' in updates)) params.delete('page');
+
+      router.replace(`${pathname}?${params.toString()}` as Route, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  const handleChange =
+    (key: string) =>
+    (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
+      updateParams({ [key]: e.target.value });
+
+  // ── Filtrado ────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    const q = search.toLowerCase();
+    const q    = search.toLowerCase();
     const from = dateFrom ? new Date(dateFrom) : null;
-    const to = dateTo ? new Date(dateTo + 'T23:59:59') : null;
+    const to   = dateTo   ? new Date(dateTo + 'T23:59:59') : null;
 
     return tasks.filter((t) => {
       const matchSearch =
@@ -46,31 +78,27 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
         t.title.toLowerCase().includes(q) ||
         t.description.toLowerCase().includes(q);
 
-      const matchStatus = filterStatus === 'ALL' || t.status === filterStatus;
+      const matchStatus   = filterStatus   === 'ALL' || t.status   === filterStatus;
       const matchPriority = filterPriority === 'ALL' || t.priority === filterPriority;
 
       let matchNpl = true;
-      if (filterNpl === 'WITH_NPL') matchNpl = t.nplId !== null;
+      if      (filterNpl === 'WITH_NPL')    matchNpl = t.nplId !== null;
       else if (filterNpl === 'WITHOUT_NPL') matchNpl = t.nplId === null;
-      else if (filterNpl !== 'ALL') matchNpl = t.nplId === Number(filterNpl);
+      else if (filterNpl !== 'ALL')         matchNpl = t.nplId === Number(filterNpl);
 
       const fp = t.fechaPropuesta ? new Date(t.fechaPropuesta) : null;
       const matchDateFrom = !from || (fp !== null && fp >= from);
-      const matchDateTo = !to || (fp !== null && fp <= to);
+      const matchDateTo   = !to   || (fp !== null && fp <= to);
 
       return matchSearch && matchStatus && matchPriority && matchNpl && matchDateFrom && matchDateTo;
     });
   }, [tasks, search, filterStatus, filterPriority, filterNpl, dateFrom, dateTo]);
 
-  // Reset to page 1 on filter change
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const safePage   = Math.min(Math.max(1, page), totalPages);
+  const paginated  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const handleFilterChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
-    setter(e.target.value);
-    setPage(1);
-  };
+  const goToPage = (p: number) => updateParams({ page: String(p) });
 
   if (tasks.length === 0) {
     return (
@@ -95,7 +123,7 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
           <input
             type="text"
             value={search}
-            onChange={handleFilterChange(setSearch)}
+            onChange={handleChange('q')}
             placeholder="Buscar por título o descripción…"
             className="w-full rounded-md border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400"
           />
@@ -107,7 +135,7 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
 
           <select
             value={filterStatus}
-            onChange={handleFilterChange(setFilterStatus)}
+            onChange={handleChange('status')}
             className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
           >
             <option value="ALL">Todos los estados</option>
@@ -118,7 +146,7 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
 
           <select
             value={filterPriority}
-            onChange={handleFilterChange(setFilterPriority)}
+            onChange={handleChange('priority')}
             className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
           >
             <option value="ALL">Todas las prioridades</option>
@@ -127,11 +155,10 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
             ))}
           </select>
 
-          {/* Filtro NPL: si está fijo no se muestra el select */}
           {!fixedNplId && (
             <select
               value={filterNpl}
-              onChange={handleFilterChange(setFilterNpl)}
+              onChange={handleChange('npl')}
               className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
             >
               <option value="ALL">Con o sin NPL</option>
@@ -150,19 +177,19 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
           )}
 
           {/* Rango de fecha propuesta */}
-          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+          <div className="flex items-center gap-1.5">
             <span className="shrink-0 text-xs font-medium text-gray-400">F. propuesta:</span>
             <input
               type="date"
               value={dateFrom}
-              onChange={handleFilterChange(setDateFrom)}
+              onChange={handleChange('desde')}
               className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
             />
             <span className="text-gray-400">—</span>
             <input
               type="date"
               value={dateTo}
-              onChange={handleFilterChange(setDateTo)}
+              onChange={handleChange('hasta')}
               className="rounded-md border border-gray-200 px-2 py-1.5 text-sm text-gray-700 focus:border-orange-400 focus:outline-none"
             />
           </div>
@@ -196,7 +223,7 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
           </p>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => goToPage(safePage - 1)}
               disabled={safePage === 1}
               className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >
@@ -215,7 +242,7 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
                 ) : (
                   <button
                     key={p}
-                    onClick={() => setPage(p as number)}
+                    onClick={() => goToPage(p as number)}
                     className={`min-w-[2rem] rounded-md px-2 py-1 text-sm font-medium ${
                       p === safePage
                         ? 'bg-orange-500 text-white'
@@ -227,7 +254,7 @@ export default function TaskList({ tasks, nplOptions = [], fixedNplId }: Props) 
                 )
               )}
             <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => goToPage(safePage + 1)}
               disabled={safePage === totalPages}
               className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
             >
