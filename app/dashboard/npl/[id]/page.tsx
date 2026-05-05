@@ -242,9 +242,12 @@ export default async function NplDetailDashboardPage({ params }: Props) {
               />
             </div>
           )}
-          {npl.distribucion && (
+          {npl.distribucion && npl.distribucion !== '<p></p>' && (
             <div className="col-span-2 sm:col-span-3">
-              <DataRow label="Distribución" value={npl.distribucion} />
+              <dt className="text-sm font-medium text-gray-500">Distribución</dt>
+              <dd className="mt-1">
+                <RichTextContent html={npl.distribucion} />
+              </dd>
             </div>
           )}
           {npl.datosRegistro && (

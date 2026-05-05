@@ -1,6 +1,6 @@
 'use client';
 
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, Controller } from 'react-hook-form';
 import { FormError, FormInput, FormLabel } from '@/src/shared/components/forms';
 import { NplInput } from '../schemas/nplSchema';
 import {
@@ -8,6 +8,7 @@ import {
   NPL_TIPO_INMUEBLE_LABELS,
 } from '../types/npl.types';
 import NplImageUploader from './NplImageUploader';
+import NplRichTextEditor from './NplRichTextEditor';
 import ProvinciasMunicipiosSelect from './ProvinciasMunicipiosSelect';
 
 export default function NplFormSectionA() {
@@ -93,13 +94,17 @@ export default function NplFormSectionA() {
 
       {/* Distribución */}
       <div>
-        <FormLabel htmlFor="distribucion">Distribución</FormLabel>
-        <textarea
-          id="distribucion"
-          rows={3}
-          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-          placeholder="Descripción de la distribución..."
-          {...register('distribucion')}
+        <FormLabel>Distribución</FormLabel>
+        <Controller
+          name="distribucion"
+          render={({ field }) => (
+            <NplRichTextEditor
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              placeholder="Descripción de la distribución..."
+              error={errors.distribucion?.message}
+            />
+          )}
         />
       </div>
 

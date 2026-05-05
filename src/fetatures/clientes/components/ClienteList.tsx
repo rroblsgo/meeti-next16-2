@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
+import { useDebounce } from '@/src/shared/hooks/useDebounce';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { Route } from 'next';
@@ -38,6 +39,16 @@ export default function ClienteList({ clientes }: Props) {
   const router      = useRouter();
   const pathname    = usePathname();
   const searchParams = useSearchParams();
+
+  // ── Estado local del input (respuesta inmediata al teclado) ─────────────
+  const [searchInput, setSearchInput] = useState(searchParams.get('q') ?? '');
+  useEffect(() => { setSearchInput(searchParams.get('q') ?? ''); }, [searchParams]);
+  const debouncedSearch = useDebounce(searchInput, 300);
+  useEffect(() => {
+    const current = searchParams.get('q') ?? '';
+    if (debouncedSearch !== current) updateParams({ q: debouncedSearch });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   // ── Leer filtros desde la URL ───────────────────────────────────────────
   const search          = searchParams.get('q')         ?? '';
@@ -115,8 +126,8 @@ export default function ClienteList({ clientes }: Props) {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            value={search}
-            onChange={handleChange('q')}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Buscar por nombre…"
             className="w-full rounded-md border border-gray-200 py-2 pl-9 pr-3 text-sm focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400"
           />
