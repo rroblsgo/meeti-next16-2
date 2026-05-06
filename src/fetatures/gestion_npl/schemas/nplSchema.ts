@@ -130,7 +130,7 @@ const NplSectionBSchema = z.object({
     .array(
       z.object({
         titulo: z.string().trim().min(1, 'El título es obligatorio'),
-        valor: z.number({ invalid_type_error: 'Introduce un número válido' }),
+        valor: z.number({ error: 'Introduce un número válido' }),
       })
     )
     .default([]),

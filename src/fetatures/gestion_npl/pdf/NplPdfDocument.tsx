@@ -325,7 +325,7 @@ export default function NplPdfDocument({
           {npl.distribucion && npl.distribucion !== '<p></p>' && (
             <View style={{ marginBottom: 8 }}>
               <SectionHeader title="DISTRIBUCION DETALLADA" />
-              {renderHtml(npl.distribucion, styles)}
+              {renderHtml(npl.distribucion)}
             </View>
           )}
 
