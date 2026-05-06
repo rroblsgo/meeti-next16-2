@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Route } from 'next';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import EditTask from '@/src/fetatures/tasks/components/EditTask';
@@ -27,6 +28,8 @@ export default async function EditTaskPage(
   if (!session) redirect('/auth/login');
 
   const { id } = await props.params;
+  const searchParams = await (props as { searchParams?: Promise<{ returnTo?: string }> }).searchParams;
+  const returnTo = searchParams?.returnTo;
   const taskId = Number(id);
   const [task, options, documents] = await Promise.all([
     taskService.getTaskDetails(taskId, session.user),
@@ -41,7 +44,7 @@ export default async function EditTaskPage(
       </Heading>
       <div className="mt-5 flex gap-3">
         <Link
-          href="/dashboard/tasks"
+          href={(returnTo ?? "/dashboard/tasks") as Route}
           className="rounded-lg bg-orange-500 px-8 py-3 text-xs font-bold text-white hover:bg-orange-600 lg:text-sm"
         >
           ← Volver a tareas
@@ -54,7 +57,7 @@ export default async function EditTaskPage(
         </Link>
       </div>
       <div className="mt-8 rounded-xl bg-white p-8 shadow-lg">
-        <EditTask task={task} options={options} />
+        <EditTask task={task} options={options} returnTo={returnTo} />
       </div>
 
       <div className="mt-8 rounded-xl bg-white p-8 shadow-lg">

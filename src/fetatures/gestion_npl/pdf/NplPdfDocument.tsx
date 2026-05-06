@@ -21,6 +21,7 @@ import {
 
 import type { SelectNpl } from '../types/npl.types';
 import type { SelectNplDeudor } from '../../npl_deudores/types/deudor.types';
+import { calcularRentabilidad } from '../utils/npl-calc';
 
 type Props = {
   npl: SelectNpl;
@@ -127,53 +128,29 @@ export default function NplPdfDocument({
   empresaContacto = '',
   empresaWeb = '',
 }: Props) {
-  // Cálculos de rentabilidad
-  const coste = npl.costeAdquisicionCredito
-    ? parseFloat(npl.costeAdquisicionCredito)
-    : null;
-  const ajd = npl.impuestosAjd ? parseFloat(npl.impuestosAjd) : null;
-  const notaria = npl.costesNotariaRegistro
-    ? parseFloat(npl.costesNotariaRegistro)
-    : null;
+  // ── Cálculos de rentabilidad (usando la misma lógica que la app) ────────────
+  const rentabilidad = calcularRentabilidad(npl);
+  const { inversionTotal: inversionBase, escenarios } = rentabilidad;
+
+  // Compatibilidad con campos que se usan más abajo
   const mercado = npl.precioMercado ? parseFloat(npl.precioMercado) : null;
-  const ventaRapida = npl.precioVentaRapida
-    ? parseFloat(npl.precioVentaRapida)
-    : null;
   const principal = npl.derechoCobroPrincipal
     ? parseFloat(npl.derechoCobroPrincipal)
     : null;
   const intereses = npl.intereses ? parseFloat(npl.intereses) : null;
   const costas = npl.costas ? parseFloat(npl.costas) : null;
 
-  const inversionBase =
-    coste !== null && ajd !== null && notaria !== null
-      ? coste + ajd + notaria
-      : coste;
-
   const totalConIntereses =
     principal !== null && intereses !== null && costas !== null
       ? principal + intereses + costas
       : null;
 
-  const beneficioEscPrincipal =
-    inversionBase !== null && mercado !== null ? mercado - inversionBase : null;
-
-  const roiEscPrincipal =
-    beneficioEscPrincipal !== null &&
-    inversionBase !== null &&
-    inversionBase > 0
-      ? (beneficioEscPrincipal / inversionBase) * 100
-      : null;
-
-  const beneficioVentaRapida =
-    inversionBase !== null && ventaRapida !== null
-      ? ventaRapida - inversionBase
-      : null;
-
-  const roiVentaRapida =
-    beneficioVentaRapida !== null && inversionBase !== null && inversionBase > 0
-      ? (beneficioVentaRapida / inversionBase) * 100
-      : null;
+  // Escenario principal (Adjudicación, casoA = precio mercado)
+  const escPrincipal = escenarios.find((e) => e.principal);
+  const beneficioEscPrincipal = escPrincipal?.casoA.beneficio ?? null;
+  const roiEscPrincipal = escPrincipal?.casoA.roi ?? null;
+  const beneficioVentaRapida = escPrincipal?.casoB.beneficio ?? null;
+  const roiVentaRapida = escPrincipal?.casoB.roi ?? null;
 
   const location = [npl.municipio, npl.provincia]
     .filter(Boolean)
@@ -295,7 +272,10 @@ export default function NplPdfDocument({
                   },
                 ],
                 [
-                  { label: 'DISTRIBUCION', value: fmtVal(npl.distribucionResumida) },
+                  {
+                    label: 'DISTRIBUCION',
+                    value: fmtVal(npl.distribucionResumida),
+                  },
                   { label: 'REF. CATASTRAL', value: fmtVal(npl.refCatastral) },
                   {
                     label: 'FINCA REGISTRAL',
@@ -375,87 +355,209 @@ export default function NplPdfDocument({
                 },
               ],
               ...(npl.fechaCompra || npl.fechaTerminacion
-                ? [[
-                    {
-                      label: 'FECHA DE COMPRA',
-                      value: fmtVal(npl.fechaCompra),
-                    },
-                    {
-                      label: 'FECHA DE TERMINACION',
-                      value: fmtVal(npl.fechaTerminacion),
-                    },
-                    { label: '', value: '' },
-                  ]]
+                ? [
+                    [
+                      {
+                        label: 'FECHA DE COMPRA',
+                        value: fmtVal(npl.fechaCompra),
+                      },
+                      {
+                        label: 'FECHA DE TERMINACION',
+                        value: fmtVal(npl.fechaTerminacion),
+                      },
+                      { label: '', value: '' },
+                    ],
+                  ]
                 : []),
             ]}
           />
 
           {/* Gastos diversos */}
-          {Array.isArray(npl.gastosDiversos) && (npl.gastosDiversos as { titulo: string; valor: number }[]).length > 0 && (
-            <View style={{ marginBottom: 8 }}>
-              <DataTable
-                rows={(npl.gastosDiversos as { titulo: string; valor: number }[]).map((g) => [
-                  { label: g.titulo.toUpperCase(), value: fmtEuros(String(g.valor)) },
-                  { label: '', value: '' },
-                  { label: '', value: '' },
-                ])}
-              />
-            </View>
-          )}
+          {Array.isArray(npl.gastosDiversos) &&
+            (npl.gastosDiversos as { titulo: string; valor: number }[]).length >
+              0 && (
+              <View style={{ marginBottom: 8 }}>
+                <DataTable
+                  rows={(
+                    npl.gastosDiversos as { titulo: string; valor: number }[]
+                  ).map((g) => [
+                    {
+                      label: g.titulo.toUpperCase(),
+                      value: fmtEuros(String(g.valor)),
+                    },
+                    { label: '', value: '' },
+                    { label: '', value: '' },
+                  ])}
+                />
+              </View>
+            )}
 
-          {/* Escenarios: forzar salto de página si no caben juntos */}
+          {/* ── Escenarios de inversión (grid 2×2) ───────────────────────── */}
           <View wrap={false} style={styles.scenariosGrid}>
-            {/* Escenario principal */}
-            <View style={[styles.scenarioCard, styles.scenarioCardHighlight]}>
-              <View style={styles.scenarioBadge} />
-              <Text style={styles.scenarioTitle}>
-                ESCENARIO PRINCIPAL -- ADJUDICACION Y VENTA
-              </Text>
-              <View style={styles.scenarioRow}>
-                <Text style={styles.scenarioLabel}>Inversion</Text>
-                <Text style={styles.scenarioValue}>
-                  {fmtEurosShort(inversionBase)}
-                </Text>
-              </View>
-              <View style={styles.scenarioRow}>
-                <Text style={styles.scenarioLabel}>Valoracion mercado</Text>
-                <Text style={styles.scenarioValue}>
-                  {fmtEurosShort(npl.precioMercado)}
-                </Text>
-              </View>
-              <View style={styles.scenarioRow}>
-                <Text style={styles.scenarioLabel}>Beneficio</Text>
-                <Text style={styles.scenarioValue}>
-                  {fmtEurosShort(beneficioEscPrincipal)}
-                </Text>
-              </View>
-              <Text style={styles.scenarioRoi}>{fmtPct(roiEscPrincipal)}</Text>
-            </View>
+            {escenarios.map((esc) => {
+              const isHighlight = esc.principal;
+              return (
+                <View
+                  key={esc.titulo}
+                  style={[
+                    styles.scenarioCard,
+                    isHighlight
+                      ? styles.scenarioCardHighlight
+                      : styles.scenarioCardLast,
+                  ]}
+                >
+                  {isHighlight && <View style={styles.scenarioBadge} />}
+                  {!isHighlight && (
+                    <View
+                      style={[styles.scenarioBadge, styles.scenarioBadgeAlt]}
+                    />
+                  )}
 
-            {/* Escenario venta rápida */}
-            <View style={[styles.scenarioCard, styles.scenarioCardLast]}>
-              <View style={[styles.scenarioBadge, styles.scenarioBadgeAlt]} />
-              <Text style={styles.scenarioTitle}>VENTA RAPIDA</Text>
-              <View style={styles.scenarioRow}>
-                <Text style={styles.scenarioLabel}>Inversion</Text>
-                <Text style={styles.scenarioValue}>
-                  {fmtEurosShort(inversionBase)}
-                </Text>
-              </View>
-              <View style={styles.scenarioRow}>
-                <Text style={styles.scenarioLabel}>Precio venta rapida</Text>
-                <Text style={styles.scenarioValue}>
-                  {fmtEurosShort(npl.precioVentaRapida)}
-                </Text>
-              </View>
-              <View style={styles.scenarioRow}>
-                <Text style={styles.scenarioLabel}>Beneficio</Text>
-                <Text style={styles.scenarioValue}>
-                  {fmtEurosShort(beneficioVentaRapida)}
-                </Text>
-              </View>
-              <Text style={styles.scenarioRoi}>{fmtPct(roiVentaRapida)}</Text>
-            </View>
+                  {/* Título */}
+                  <Text style={styles.scenarioTitle}>
+                    {esc.titulo.toUpperCase()}
+                  </Text>
+
+                  {/* Desglose inversión */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      marginBottom: 4,
+                      marginTop: 3,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 6,
+                        color: COLORS.text,
+                        fontFamily: 'Helvetica-Bold',
+                      }}
+                    >
+                      {esc.casoA.coste !== null
+                        ? new Intl.NumberFormat('es-ES', {
+                            style: 'currency',
+                            currency: 'EUR',
+                          }).format(esc.casoA.coste)
+                        : '—'}
+                    </Text>
+                    {esc.inversionBase !== null && (
+                      <Text
+                        style={{
+                          fontSize: 5.5,
+                          color: COLORS.textMuted,
+                          marginLeft: 3,
+                        }}
+                      >
+                        {'= '}
+                        {new Intl.NumberFormat('es-ES', {
+                          style: 'currency',
+                          currency: 'EUR',
+                        }).format(esc.inversionBase)}
+                        {' base'}
+                        {esc.costeExtra ? ` + ${esc.costeExtra}` : ''}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Caso A */}
+                  <Text
+                    style={{
+                      fontSize: 6,
+                      color: COLORS.muted,
+                      marginBottom: 3,
+                    }}
+                  >
+                    CASO A — {esc.casoA.label.toUpperCase()}
+                  </Text>
+                  <View style={styles.scenarioRow}>
+                    <Text style={styles.scenarioLabel}>Ingreso</Text>
+                    <Text style={styles.scenarioValue}>
+                      {fmtEurosShort(esc.casoA.ingreso)}
+                    </Text>
+                  </View>
+                  <View style={styles.scenarioRow}>
+                    <Text style={styles.scenarioLabel}>Coste</Text>
+                    <Text style={styles.scenarioValue}>
+                      {fmtEurosShort(esc.casoA.coste)}
+                    </Text>
+                  </View>
+                  <View style={styles.scenarioRow}>
+                    <Text style={styles.scenarioLabel}>Beneficio</Text>
+                    <Text
+                      style={[
+                        styles.scenarioValue,
+                        {
+                          color:
+                            (esc.casoA.beneficio ?? 0) >= 0
+                              ? COLORS.success
+                              : COLORS.danger,
+                        },
+                      ]}
+                    >
+                      {fmtEurosShort(esc.casoA.beneficio)}
+                    </Text>
+                  </View>
+                  <Text style={styles.scenarioRoi}>
+                    {fmtPct(esc.casoA.roi)}
+                  </Text>
+                  {esc.casoA.roiAnual !== null && (
+                    <Text style={styles.scenarioRoiAnual}>
+                      {fmtPct(esc.casoA.roiAnual)} anual
+                    </Text>
+                  )}
+
+                  {/* Caso B si difiere */}
+                  {esc.casoB.label !== esc.casoA.label && (
+                    <>
+                      <Text
+                        style={{
+                          fontSize: 6,
+                          color: COLORS.muted,
+                          marginBottom: 3,
+                          marginTop: 6,
+                          borderTopWidth: 0.5,
+                          borderTopColor: COLORS.border,
+                          paddingTop: 4,
+                        }}
+                      >
+                        CASO B — {esc.casoB.label.toUpperCase()}
+                      </Text>
+                      <View style={styles.scenarioRow}>
+                        <Text style={styles.scenarioLabel}>Ingreso</Text>
+                        <Text style={styles.scenarioValue}>
+                          {fmtEurosShort(esc.casoB.ingreso)}
+                        </Text>
+                      </View>
+                      <View style={styles.scenarioRow}>
+                        <Text style={styles.scenarioLabel}>Beneficio</Text>
+                        <Text
+                          style={[
+                            styles.scenarioValue,
+                            {
+                              color:
+                                (esc.casoB.beneficio ?? 0) >= 0
+                                  ? COLORS.success
+                                  : COLORS.danger,
+                            },
+                          ]}
+                        >
+                          {fmtEurosShort(esc.casoB.beneficio)}
+                        </Text>
+                      </View>
+                      <Text style={[styles.scenarioRoi, { fontSize: 9 }]}>
+                        {fmtPct(esc.casoB.roi)}
+                      </Text>
+                      {esc.casoB.roiAnual !== null && (
+                        <Text style={styles.scenarioRoiAnual}>
+                          {fmtPct(esc.casoB.roiAnual)} anual
+                        </Text>
+                      )}
+                    </>
+                  )}
+                </View>
+              );
+            })}
           </View>
 
           {/* ── C. ESTADO PROCESAL ────────────────────────────────────────── */}

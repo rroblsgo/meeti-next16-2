@@ -6,10 +6,12 @@ import { requireAuth } from '@/src/lib/auth-server';
 import { nplService } from '@/src/fetatures/gestion_npl/services/NplService';
 import { NplPolicy } from '@/src/fetatures/gestion_npl/policies/NplPolicy';
 import { calcularRentabilidad } from '@/src/fetatures/gestion_npl/utils/npl-calc';
+import NplEscenariosRentabilidad from '@/src/fetatures/gestion_npl/components/NplEscenariosRentabilidad';
 import {
   NPL_TIPO_INMUEBLE_LABELS,
   NPL_PROCEDIMIENTO_LABELS,
   NPL_ESTADO_LABELS,
+  NplListItem,
 } from '@/src/fetatures/gestion_npl/types/npl.types';
 import { deudorService } from '@/src/fetatures/npl_deudores/services/DeudorService';
 import RichTextContent from '@/src/shared/components/ui/RichTextContent';
@@ -104,7 +106,7 @@ export default async function NplDetailDashboardPage({ params }: Props) {
     taskService.listTasksByNpl(npl.id),
   ]);
 
-  const { roiNeto, inversionTotal, beneficioNeto } = rentabilidad;
+  const { roiNeto, inversionTotal, beneficioNeto, escenarios } = rentabilidad;
 
   return (
     <div className="space-y-6 pb-12">
@@ -186,34 +188,6 @@ export default async function NplDetailDashboardPage({ params }: Props) {
           ))}
         </div>
       )}
-
-      {/* ── Métricas de rentabilidad ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: 'Precio mercado', value: fmt(npl.precioMercado) },
-          { label: 'Precio compra', value: fmt(npl.costeAdquisicionCredito) },
-          {
-            label: 'Beneficio neto',
-            value: beneficioNeto !== null ? fmt(String(beneficioNeto)) : null,
-          },
-          {
-            label: 'ROI neto',
-            value: roiNeto !== null ? `${roiNeto.toFixed(2)} %` : null,
-          },
-        ].map(({ label, value }) => (
-          <div
-            key={label}
-            className="rounded-xl bg-white p-4 text-center shadow-sm"
-          >
-            <p className="text-[10px] uppercase tracking-wider text-gray-400">
-              {label}
-            </p>
-            <p className="mt-1 text-lg font-bold text-gray-900">
-              {value ?? '—'}
-            </p>
-          </div>
-        ))}
-      </div>
 
       {/* ── A. Datos registrales ──────────────────────────────────────────── */}
       <Section title="A. Superficies y datos registrales">
@@ -316,50 +290,14 @@ export default async function NplDetailDashboardPage({ params }: Props) {
             </dl>
           </div>
         )}
+      </Section>
 
-        {/* Panel resumen ROI */}
-        {inversionTotal !== null && (
-          <div className="mt-4 rounded-lg bg-orange-50 p-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-orange-600">
-                  Inversión total
-                </p>
-                <p className="font-bold text-gray-900">
-                  {fmt(String(inversionTotal))}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-orange-600">
-                  Beneficio neto
-                </p>
-                <p
-                  className={`font-bold ${
-                    beneficioNeto !== null && beneficioNeto >= 0
-                      ? 'text-green-700'
-                      : 'text-red-600'
-                  }`}
-                >
-                  {beneficioNeto !== null ? fmt(String(beneficioNeto)) : '—'}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-orange-600">
-                  ROI neto
-                </p>
-                <p
-                  className={`font-bold ${
-                    roiNeto !== null && roiNeto >= 0
-                      ? 'text-green-700'
-                      : 'text-red-600'
-                  }`}
-                >
-                  {roiNeto !== null ? `${roiNeto.toFixed(2)} %` : '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* ── Escenarios de inversión ───────────────────────────────────────── */}
+      <Section title="Escenarios de inversión">
+        <NplEscenariosRentabilidad
+          escenarios={escenarios}
+          inversionTotal={inversionTotal}
+        />
       </Section>
 
       {/* ── C. Estado procesal ───────────────────────────────────────────── */}
@@ -518,6 +456,7 @@ export default async function NplDetailDashboardPage({ params }: Props) {
             label="Visibilidad"
             value={npl.esPublico ? 'Público' : 'Privado'}
           />
+          <DataRow label="Creado por" value={(npl as NplListItem).creatorName ?? '—'} />
           <DataRow
             label="Creado"
             value={new Date(npl.createdAt).toLocaleDateString('es-ES', {

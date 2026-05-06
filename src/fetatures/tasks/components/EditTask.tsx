@@ -4,15 +4,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm } from 'react-hook-form';
 import { Form, FormSubmit } from '@/src/shared/components/forms';
 import toast from 'react-hot-toast';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import { SelectTask, TaskFormOptions } from '../types/task.types';
 import { TaskInput, TaskSchema } from '../schemas/taskSchema';
 import { editTaskAction } from '../actions/task-actions';
 import TaskForm from './TaskForm';
 
-type Props = { task: SelectTask; options: TaskFormOptions };
+type Props = { task: SelectTask; options: TaskFormOptions; returnTo?: string };
 
-export default function EditTask({ task, options }: Props) {
+export default function EditTask({ task, options, returnTo }: Props) {
+  const router = useRouter();
   const methods = useForm<TaskInput>({
     resolver: zodResolver(TaskSchema),
     mode: 'all',
@@ -37,7 +39,7 @@ export default function EditTask({ task, options }: Props) {
     if (error) toast.error(error);
     if (success) {
       toast.success(success);
-      redirect('/dashboard/tasks');
+      router.push((returnTo ?? '/dashboard/tasks') as Route);
     }
   };
 

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { Route } from 'next';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/src/lib/auth-server';
@@ -11,6 +12,7 @@ import { documentService } from '@/src/fetatures/documents/services/DocumentServ
 
 type Props = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ returnTo?: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -21,11 +23,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function EditNplPage({ params }: Props) {
+export default async function EditNplPage({ params, searchParams }: Props) {
   const { session } = await requireAuth();
   if (!session) redirect('/auth/login');
 
   const { id } = await params;
+  const { returnTo } = await searchParams;
   const nplId = Number(id);
   const [npl, documents] = await Promise.all([
     nplService.getNplForEdit(nplId, session.user),
@@ -36,13 +39,13 @@ export default async function EditNplPage({ params }: Props) {
     <>
       <Heading className="text-center text-amber-500">Editar NPL</Heading>
       <Link
-        href="/dashboard/npl"
+        href={(returnTo ?? '/dashboard/npl') as Route}
         className="mt-5 inline-block rounded-lg bg-orange-500 px-10 py-3 text-center text-xs font-bold text-white transition-colors hover:bg-orange-600 lg:text-xl"
       >
         Volver a NPLs
       </Link>
       <div className="mt-8 rounded-xl bg-white p-8 shadow-lg">
-        <EditNpl npl={npl} />
+        <EditNpl npl={npl} returnTo={returnTo} />
       </div>
 
       {/* ── Documentos adjuntos ────────────────────────────────────────────── */}

@@ -8,9 +8,10 @@ type Props = {
 
 const formatEuros = (v: string | null | undefined) => {
   if (!v) return '—';
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(
-    parseFloat(v)
-  );
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+  }).format(parseFloat(v));
 };
 
 const formatM2 = (v: string | null | undefined) => {
@@ -24,7 +25,9 @@ export default function NplItem({ npl }: Props) {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-base font-bold text-gray-900">{npl.tituloOperacion}</span>
+            <span className="text-base font-bold text-gray-900">
+              {npl.tituloOperacion}
+            </span>
             <NplStatusBadge estado={npl.estado} />
             {npl.esPublico && (
               <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-600/20 ring-inset">
@@ -46,7 +49,8 @@ export default function NplItem({ npl }: Props) {
             </p>
             {npl.superficieConst && (
               <p>
-                <span className="font-semibold">Superficie:</span> {formatM2(npl.superficieConst)}
+                <span className="font-semibold">Superficie:</span>{' '}
+                {formatM2(npl.superficieConst)}
               </p>
             )}
             {npl.precioMercado && (
@@ -63,12 +67,17 @@ export default function NplItem({ npl }: Props) {
             )}
             {npl.refCatastral && (
               <p>
-                <span className="font-semibold">Ref. catastral:</span> {npl.refCatastral}
+                <span className="font-semibold">Ref. catastral:</span>{' '}
+                {npl.refCatastral}
               </p>
             )}
             <p>
               <span className="font-semibold">Creado:</span>{' '}
               {new Date(npl.createdAt).toLocaleDateString('es-ES')}
+            </p>
+            <p>
+              <span className="font-semibold">Por:</span>{' '}
+              <span className="text-gray-500">{npl.creatorName}</span>
             </p>
           </div>
         </div>

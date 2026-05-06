@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
 import { Building2, User, Briefcase, Calendar, Tag, Clock } from 'lucide-react';
 import { TaskListItem, TASK_CATEGORY_LABELS } from '../types/task.types';
 import TaskPriorityBadge from './TaskPriorityBadge';
@@ -15,6 +17,11 @@ type Props = { task: TaskListItem };
 
 export default function TaskItem({ task }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentUrl = searchParams.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname;
 
   return (
     <>
@@ -107,7 +114,7 @@ export default function TaskItem({ task }: Props) {
           {/* Acciones — solo editar y eliminar */}
           <div className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-end">
             <Link
-              href={`/dashboard/tasks/${task.id}/edit`}
+              href={`/dashboard/tasks/${task.id}/edit?returnTo=${encodeURIComponent(currentUrl)}` as Route}
               className="rounded-md bg-orange-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-orange-600"
             >
               Editar

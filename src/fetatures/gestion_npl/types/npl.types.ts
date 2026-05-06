@@ -59,4 +59,5 @@ export type NplRentabilidad = {
   inversionTotal: number | null;
   beneficioNeto: number | null;
   roiNeto: number | null;
+  escenarios: import('../utils/npl-calc').Escenario[];
 };

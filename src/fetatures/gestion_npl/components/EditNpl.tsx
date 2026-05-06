@@ -2,7 +2,8 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm } from 'react-hook-form';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import toast from 'react-hot-toast';
 import { NplInput, NplSchema } from '../schemas/nplSchema';
 import { Form, FormSubmit } from '@/src/shared/components/forms';
@@ -12,11 +13,13 @@ import { SelectNpl } from '../types/npl.types';
 
 type Props = {
   npl: SelectNpl;
+  returnTo?: string;
 };
 
 const n2s = (v: string | null | undefined) => v ?? '';
 
-export default function EditNpl({ npl }: Props) {
+export default function EditNpl({ npl, returnTo }: Props) {
+  const router = useRouter();
   const methods = useForm<NplInput>({
     resolver: zodResolver(NplSchema),
     mode: 'all',
@@ -53,7 +56,8 @@ export default function EditNpl({ npl }: Props) {
       pujaProbable: n2s(npl.pujaProbable),
       fechaCompra: npl.fechaCompra ?? '',
       fechaTerminacion: npl.fechaTerminacion ?? '',
-      gastosDiversos: (npl.gastosDiversos as { titulo: string; valor: number }[]) ?? [],
+      gastosDiversos:
+        (npl.gastosDiversos as { titulo: string; valor: number }[]) ?? [],
       procedimiento: npl.procedimiento ?? undefined,
       nig: npl.nig ?? '',
       juzgado: npl.juzgado ?? '',
@@ -75,7 +79,7 @@ export default function EditNpl({ npl }: Props) {
     if (error) toast.error(error);
     if (success) {
       toast.success(success);
-      redirect('/dashboard/npl');
+      router.push((returnTo ?? '/dashboard/npl') as Route);
     }
   };
 

@@ -15,6 +15,9 @@ export const COLORS = {
   text:        '#1e293b',
   textMuted:   '#64748b',
   textLight:   '#94a3b8',
+  success:     '#16a34a',
+  danger:      '#dc2626',
+  muted:       '#94a3b8',
 };
 
 export const styles = StyleSheet.create({
@@ -233,10 +236,16 @@ export const styles = StyleSheet.create({
   scenarioLabel:  { fontSize: 6.5, color: COLORS.textMuted },
   scenarioValue:  { fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: COLORS.text },
   scenarioRoi: {
-    fontSize: 14,
+    fontSize: 10,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.accent,
-    marginTop: 6,
+    marginTop: 4,
+  },
+  scenarioRoiAnual: {
+    fontSize: 7,
+    color: COLORS.textMuted,
+    marginTop: 1,
+    marginBottom: 2,
   },
 
   // ─── Actuaciones / hitos ───────────────────────────────────────────────────

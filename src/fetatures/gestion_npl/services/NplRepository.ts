@@ -88,8 +88,9 @@ class NplRepository implements INplRepository {
 
   async findById(nplId: number) {
     const [result] = await db
-      .select()
+      .select(nplSelectFields)
       .from(npl)
+      .innerJoin(users, eq(npl.creatorId, users.id))
       .where(eq(npl.id, nplId))
       .limit(1);
     return result;
