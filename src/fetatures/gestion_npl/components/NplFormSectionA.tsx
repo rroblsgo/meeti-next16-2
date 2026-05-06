@@ -92,9 +92,26 @@ export default function NplFormSectionA() {
         />
       </div>
 
-      {/* Distribución */}
+      {/* Distribución resumida */}
       <div>
-        <FormLabel>Distribución</FormLabel>
+        <FormLabel htmlFor="distribucionResumida">
+          Distribución resumida
+        </FormLabel>
+        <FormInput
+          id="distribucionResumida"
+          type="text"
+          maxLength={255}
+          placeholder="Ej. 3 hab., 2 baños, salón, cocina, terraza"
+          {...register('distribucionResumida')}
+        />
+        {errors.distribucionResumida && (
+          <FormError>{errors.distribucionResumida.message}</FormError>
+        )}
+      </div>
+
+      {/* Distribución detallada (TipTap) */}
+      <div>
+        <FormLabel>Distribución detallada</FormLabel>
         <Controller
           name="distribucion"
           render={({ field }) => (

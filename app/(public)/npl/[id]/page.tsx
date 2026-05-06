@@ -106,9 +106,15 @@ export default async function NplDetailPage({ params }: Props) {
                 <dd className="font-medium">{npl.anyConstruccion}</dd>
               </div>
             )}
-            {npl.distribucion && npl.distribucion !== '<p></p>' && (
+            {npl.distribucionResumida && (
               <div className="col-span-2">
                 <dt className="text-gray-400">Distribución</dt>
+                <dd className="font-medium">{npl.distribucionResumida}</dd>
+              </div>
+            )}
+            {npl.distribucion && npl.distribucion !== '<p></p>' && (
+              <div className="col-span-2">
+                <dt className="text-gray-400">Distribución detallada</dt>
                 <dd className="mt-1 font-medium">
                   <RichTextContent html={npl.distribucion} />
                 </dd>

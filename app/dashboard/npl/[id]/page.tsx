@@ -242,9 +242,14 @@ export default async function NplDetailDashboardPage({ params }: Props) {
               />
             </div>
           )}
+          {npl.distribucionResumida && (
+            <div className="col-span-2 sm:col-span-3">
+              <DataRow label="Distribución" value={npl.distribucionResumida} />
+            </div>
+          )}
           {npl.distribucion && npl.distribucion !== '<p></p>' && (
             <div className="col-span-2 sm:col-span-3">
-              <dt className="text-sm font-medium text-gray-500">Distribución</dt>
+              <dt className="text-sm font-medium text-gray-500">Distribución detallada</dt>
               <dd className="mt-1">
                 <RichTextContent html={npl.distribucion} />
               </dd>
@@ -287,7 +292,30 @@ export default async function NplDetailDashboardPage({ params }: Props) {
             label="Precio venta rápida"
             value={fmt(npl.precioVentaRapida)}
           />
+          <DataRow
+            label="Comisión intermediación"
+            value={fmt(npl.comisionIntermediacion)}
+          />
+          <DataRow label="Puja probable" value={fmt(npl.pujaProbable)} />
+          {npl.fechaCompra && (
+            <DataRow label="Fecha de compra" value={npl.fechaCompra} />
+          )}
+          {npl.fechaTerminacion && (
+            <DataRow label="Fecha de terminación" value={npl.fechaTerminacion} />
+          )}
         </dl>
+
+        {/* Gastos diversos */}
+        {Array.isArray(npl.gastosDiversos) && (npl.gastosDiversos as { titulo: string; valor: number }[]).length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Gastos diversos</h4>
+            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {(npl.gastosDiversos as { titulo: string; valor: number }[]).map((g, i) => (
+                <DataRow key={i} label={g.titulo} value={fmt(String(g.valor))} />
+              ))}
+            </dl>
+          </div>
+        )}
 
         {/* Panel resumen ROI */}
         {inversionTotal !== null && (

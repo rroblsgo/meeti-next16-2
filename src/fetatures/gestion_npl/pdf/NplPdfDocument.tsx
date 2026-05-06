@@ -295,7 +295,7 @@ export default function NplPdfDocument({
                   },
                 ],
                 [
-                  { label: 'DISTRIBUCION', value: fmtVal(npl.distribucion) },
+                  { label: 'DISTRIBUCION', value: fmtVal(npl.distribucionResumida) },
                   { label: 'REF. CATASTRAL', value: fmtVal(npl.refCatastral) },
                   {
                     label: 'FINCA REGISTRAL',
@@ -320,6 +320,14 @@ export default function NplPdfDocument({
               ]}
             />
           </View>
+
+          {/* ── DISTRIBUCION DETALLADA ────────────────────────────────────── */}
+          {npl.distribucion && npl.distribucion !== '<p></p>' && (
+            <View style={{ marginBottom: 8 }}>
+              <SectionHeader title="DISTRIBUCION DETALLADA" />
+              {renderHtml(npl.distribucion, styles)}
+            </View>
+          )}
 
           {/* ── B. RENTABILIDAD ───────────────────────────────────────────── */}
           {/* La tabla de costes puede fluir pero los escenarios no se parten */}
@@ -352,8 +360,48 @@ export default function NplPdfDocument({
                   green: true,
                 },
               ],
+              [
+                {
+                  label: 'COMISION INTERMEDIACION',
+                  value: fmtEuros(npl.comisionIntermediacion),
+                },
+                {
+                  label: 'PUJA PROBABLE',
+                  value: fmtEuros(npl.pujaProbable),
+                },
+                {
+                  label: 'PRECIO VENTA RAPIDA',
+                  value: fmtEuros(npl.precioVentaRapida),
+                },
+              ],
+              ...(npl.fechaCompra || npl.fechaTerminacion
+                ? [[
+                    {
+                      label: 'FECHA DE COMPRA',
+                      value: fmtVal(npl.fechaCompra),
+                    },
+                    {
+                      label: 'FECHA DE TERMINACION',
+                      value: fmtVal(npl.fechaTerminacion),
+                    },
+                    { label: '', value: '' },
+                  ]]
+                : []),
             ]}
           />
+
+          {/* Gastos diversos */}
+          {Array.isArray(npl.gastosDiversos) && (npl.gastosDiversos as { titulo: string; valor: number }[]).length > 0 && (
+            <View style={{ marginBottom: 8 }}>
+              <DataTable
+                rows={(npl.gastosDiversos as { titulo: string; valor: number }[]).map((g) => [
+                  { label: g.titulo.toUpperCase(), value: fmtEuros(String(g.valor)) },
+                  { label: '', value: '' },
+                  { label: '', value: '' },
+                ])}
+              />
+            </View>
+          )}
 
           {/* Escenarios: forzar salto de página si no caben juntos */}
           <View wrap={false} style={styles.scenariosGrid}>

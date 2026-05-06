@@ -22,6 +22,7 @@ const NplSectionASchema = z.object({
     error: 'Selecciona un tipo de inmueble válido',
   }),
   distribucion: z.string().trim().optional().or(z.literal('')),
+  distribucionResumida: z.string().trim().max(255).optional().or(z.literal('')),
   superficieConst: z
     .string()
     .optional()
@@ -111,6 +112,28 @@ const NplSectionBSchema = z.object({
     .refine((v) => !v || !isNaN(parseFloat(v)), {
       message: 'Introduce un número válido',
     }),
+  comisionIntermediacion: z
+    .string()
+    .optional()
+    .refine((v) => !v || !isNaN(parseFloat(v)), {
+      message: 'Introduce un número válido',
+    }),
+  pujaProbable: z
+    .string()
+    .optional()
+    .refine((v) => !v || !isNaN(parseFloat(v)), {
+      message: 'Introduce un número válido',
+    }),
+  fechaCompra: z.string().optional().or(z.literal('')),
+  fechaTerminacion: z.string().optional().or(z.literal('')),
+  gastosDiversos: z
+    .array(
+      z.object({
+        titulo: z.string().trim().min(1, 'El título es obligatorio'),
+        valor: z.number({ invalid_type_error: 'Introduce un número válido' }),
+      })
+    )
+    .default([]),
 });
 
 // ─── Sección C: Estado real y procesal ───────────────────────────────────────

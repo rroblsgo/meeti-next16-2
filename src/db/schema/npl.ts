@@ -8,6 +8,8 @@ import {
   numeric,
   integer,
   boolean,
+  date,
+  jsonb,
 } from 'drizzle-orm/pg-core';
 import { users } from './auth-schema';
 
@@ -58,6 +60,7 @@ export const npl = pgTable('npls', {
     .notNull()
     .default('VIVIENDA'),
   distribucion: text('distribucion'),
+  distribucionResumida: varchar('distribucion_resumida', { length: 255 }),
   superficieConst: numeric('superficie_const', { precision: 10, scale: 2 }),
   superficieParcela: numeric('superficie_parcela', { precision: 10, scale: 2 }),
   superficieDetalles: text('superficie_detalles'),
@@ -94,6 +97,17 @@ export const npl = pgTable('npls', {
     precision: 14,
     scale: 2,
   }),
+  comisionIntermediacion: numeric('comision_intermediacion', {
+    precision: 14,
+    scale: 2,
+  }),
+  pujaProbable: numeric('puja_probable', { precision: 14, scale: 2 }),
+  fechaCompra: date('fecha_compra'),
+  fechaTerminacion: date('fecha_terminacion'),
+  gastosDiversos: jsonb('gastos_diversos')
+    .$type<{ titulo: string; valor: number }[]>()
+    .notNull()
+    .default([]),
 
   // C. Estado real y procesal
   procedimiento: nplProcedimientoEnum('procedimiento').default(

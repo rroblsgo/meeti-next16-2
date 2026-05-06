@@ -28,6 +28,10 @@ class NplService {
       gastosDacion: data.gastosDacion || null,
       precioMercado: data.precioMercado || null,
       precioVentaRapida: data.precioVentaRapida || null,
+      comisionIntermediacion: data.comisionIntermediacion || null,
+      pujaProbable: data.pujaProbable || null,
+      fechaCompra: data.fechaCompra || null,
+      fechaTerminacion: data.fechaTerminacion || null,
       importeDespachado: data.importeDespachado || null,
       creatorId,
     });
@@ -83,6 +87,10 @@ class NplService {
       gastosDacion: data.gastosDacion || null,
       precioMercado: data.precioMercado || null,
       precioVentaRapida: data.precioVentaRapida || null,
+      comisionIntermediacion: data.comisionIntermediacion || null,
+      pujaProbable: data.pujaProbable || null,
+      fechaCompra: data.fechaCompra || null,
+      fechaTerminacion: data.fechaTerminacion || null,
       importeDespachado: data.importeDespachado || null,
     });
     if (!result) notFound();
