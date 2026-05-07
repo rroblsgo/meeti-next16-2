@@ -6,6 +6,9 @@ import { generatePageTitle } from '@/src/shared/utils/metadata';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
+// Nunca cachear: cada visita debe leer las notificaciones frescas de la DB
+export const dynamic = 'force-dynamic';
+
 const title = 'Tus notificaciones';
 
 export const metadata: Metadata = {
@@ -19,12 +22,14 @@ export default async function NotificationsPage() {
   const notifications = await notificationService.getUserNotifications(
     session.user.id
   );
-  await notificationService.clearNotifications(session.user.id);
 
   return (
     <>
       <Heading>{title}</Heading>
-      <NotificationList notifications={notifications} />
+      <NotificationList
+        notifications={notifications}
+        userId={session.user.id}
+      />
     </>
   );
 }

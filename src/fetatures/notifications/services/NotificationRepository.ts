@@ -10,6 +10,7 @@ export interface INotificationRepository {
   create(data: InsertNotification): Promise<SelectNotification>;
   getUnreadCount(userId: string): Promise<number>;
   findByUserId(userId: string): Promise<SelectNotification[]>;
+  markAsRead(notificationId: string): Promise<void>;
   delete(userId: string): Promise<void>;
 }
 
@@ -35,20 +36,25 @@ class NotificationRepository implements INotificationRepository {
       where: {
         AND: [{ userId: { eq: userId } }, { read: { eq: false } }],
       },
-      limit: 10,
+      limit: 20,
       orderBy: { createdAt: 'desc' },
     });
     return result;
   }
 
+  async markAsRead(notificationId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, notificationId));
+  }
+
   async delete(userId: string): Promise<void> {
     await db
       .update(notifications)
-      .set({
-        read: true,
-      })
+      .set({ read: true })
       .where(eq(notifications.userId, userId));
-    // await db.delete(notifications).where(eq(notifications.userId, userId));
   }
 }
+
 export const notificationRepository = new NotificationRepository();
