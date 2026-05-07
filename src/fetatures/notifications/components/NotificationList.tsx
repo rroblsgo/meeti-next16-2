@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
+import type { Route } from 'next';
 import PusherClient from 'pusher-js';
 import { SelectNotification } from '../types/notification.types';
 import {
@@ -54,7 +55,7 @@ function NotificationItem({
   const [isPending, startTransition] = useTransition();
   const config = TYPE_CONFIG[notification.type] ?? TYPE_CONFIG['general'];
   const taskHref = notification.taskId
-    ? `/dashboard/tasks/${notification.taskId}`
+    ? (`/dashboard/tasks/${notification.taskId}` as Route)
     : null;
 
   const handleMarkAsRead = () => {
@@ -63,7 +64,6 @@ function NotificationItem({
         method: 'PATCH',
       });
       onRead(notification.id);
-      // Notifica a NotificationsPanel para que decremente el badge
       window.dispatchEvent(new CustomEvent('notification-read'));
     });
   };
@@ -79,9 +79,7 @@ function NotificationItem({
       <p className="text-sm text-gray-800 dark:text-gray-100">
         <span className="font-semibold">{notification.actorName}</span>{' '}
         {notification.message}{' '}
-        <span className="font-bold">
-          &ldquo;{notification.target}&rdquo;
-        </span>
+        <span className="font-bold">&ldquo;{notification.target}&rdquo;</span>
         {taskHref && (
           <ArrowTopRightOnSquareIcon className="ml-1.5 inline size-3.5 text-indigo-500" />
         )}
@@ -123,7 +121,10 @@ function NotificationItem({
   );
 }
 
-export default function NotificationList({ notifications: initial, userId }: Props) {
+export default function NotificationList({
+  notifications: initial,
+  userId,
+}: Props) {
   const [items, setItems] = useState(initial);
 
   useEffect(() => {
